@@ -19,10 +19,10 @@ export const createPool = async () => {
     const raydium = await initSdk(connection, wallet, { loadToken: true });
 
     const mint1 = await raydium.token.getTokenInfo(
-      "CnyYF9m9qvzkRd2r6inbk2rJqZ96cUAvgSt9mgo2SRyG"
+      "CnyYF9m9qvzkRd2r6inbk2rJqZ96cUAvgSt9mgo2SRyG"  // My Mints
     );
     const mint2 = await raydium.token.getTokenInfo(
-      "2PHq92eDkKEDRNZnzmXk7xWB1kmQJiyAhC986i6cvp1Y"
+      "2PHq92eDkKEDRNZnzmXk7xWB1kmQJiyAhC986i6cvp1Y"  // My Mints
     );
 
     //const clmmConfigs = await raydium.api.getClmmConfigs();
