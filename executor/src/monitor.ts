@@ -504,9 +504,13 @@ async function runBot({
       }
     }
 
-    const sortedTickArrayPDAs = tickArraysWithTicks
-      .sort((a, b) => a.startTick - b.startTick)
-      .map((item) => item.pda);
+    const sortedTickArrayPDAs = Array.from(
+      new Set(
+        tickArraysWithTicks
+          .sort((a, b) => a.startTick - b.startTick)
+          .map((item) => item.pda.toBase58())
+      )
+    ).map((s) => new PublicKey(s));
 
     console.log(
       "Final tick arrays for swap:",
@@ -628,12 +632,12 @@ async function runBot({
   console.log("New inputAmountA:", inputAmountA.toString());
   console.log("New inputAmountB:", inputAmountB.toString());
 
-  const newLowerTick = tickLower - 250;
-  const newUpperTick = tickUpper + 250;
+  const newLowerTick = tickLower - 100; // Adjusted for testing
+  const newUpperTick = tickUpper + 100; // Adjusted for testing
 
   const newResA = await PoolUtils.getLiquidityAmountOutFromAmountIn({
     poolInfo,
-    slippage: 0.005,
+    slippage: 0.01,
     inputA: true,
     tickUpper: newUpperTick,
     tickLower: newLowerTick,
@@ -645,7 +649,7 @@ async function runBot({
 
   const newResB = await PoolUtils.getLiquidityAmountOutFromAmountIn({
     poolInfo,
-    slippage: 0.005,
+    slippage: 0.01,
     inputA: false,
     tickUpper: newUpperTick,
     tickLower: newLowerTick,
@@ -663,6 +667,22 @@ async function runBot({
     chosen.amountB.amount.toString()
   );
 
+  const bufferFactor = new Decimal(1.005); // Add a 0.5% buffer
+
+  const paddedAmountMaxA = new anchor.BN(
+    new Decimal(chosen.amountA.amount.toString())
+      .mul(bufferFactor)
+      .floor()
+      .toString()
+  );
+
+  const paddedAmountMaxB = new anchor.BN(
+    new Decimal(chosen.amountB.amount.toString())
+      .mul(bufferFactor)
+      .floor()
+      .toString()
+  );
+
   const {
     execute: executeThird,
     extInfo: { address: newAddress },
@@ -672,8 +692,8 @@ async function runBot({
     tickUpper: newUpperTick,
     tickLower: newLowerTick,
     liquidity: chosen.liquidity,
-    amountMaxA: inputAmountA,
-    amountMaxB: inputAmountB,
+    amountMaxA: paddedAmountMaxA,
+    amountMaxB: paddedAmountMaxB,
     ownerInfo: { useSOLBalance: true },
     txVersion,
     nft2022: true,
