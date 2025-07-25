@@ -1,10 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import {
-  PoolUtils,
-  PositionInfoLayout,
-  PositionUtils,
-  TickUtils,
-} from "@raydium-io/raydium-sdk-v2";
+import { PoolUtils, TickUtils } from "@raydium-io/raydium-sdk-v2";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotent,
@@ -18,7 +13,6 @@ import {
   TokenInvalidAccountOwnerError,
 } from "@solana/spl-token";
 import {
-  ComputeBudgetProgram,
   Connection,
   Keypair,
   PublicKey,
@@ -221,7 +215,7 @@ describe("liquidity-manager rebalance test", () => {
 
     // Need to change to trigger open position that is inside the current tick range
 
-    const tickLower = -1020; //currentArrayStartTick + startingTickSpacing * 2
+    const tickLower = -1100; //currentArrayStartTick + startingTickSpacing * 2
     const tickUpper = 400; //currentArrayStartTick + startingTickSpacing * 5
 
     console.log("tick lower and tick upper:", tickLower, tickUpper);
@@ -522,7 +516,8 @@ describe("liquidity-manager rebalance test", () => {
       desiredStarts.push(currentStartTick + i * TICKS_PER_ARRAY);
     }
 
-    const tickArrayPDAs: PublicKey[] = [];
+    const seen = new Set<string>();
+    const uniqueTickArrays = [];
 
     for (const startTick of desiredStarts) {
       const pda = deriveTickArrayPDA(
@@ -531,16 +526,25 @@ describe("liquidity-manager rebalance test", () => {
         startTick,
         tickSpacing
       );
+
       const info = await provider.connection.getAccountInfo(pda);
-      if (info) {
-        tickArrayPDAs.push(pda);
-        console.log(
-          ` Tick array exists for start tick ${startTick}: ${pda.toBase58()}`
-        );
-      } else {
-        console.log(` No tick array on chain for start tick ${startTick}`);
+      if (info && !seen.has(pda.toBase58())) {
+        seen.add(pda.toBase58());
+        uniqueTickArrays.push({
+          startTick,
+          pda,
+        });
       }
     }
+
+    const sortedTickArrayPDAs = uniqueTickArrays
+      .sort((a, b) => a.startTick - b.startTick)
+      .map((item) => item.pda);
+
+    console.log(
+      "Final tick arrays for swap:",
+      sortedTickArrayPDAs.map((x) => x.toBase58())
+    );
 
     console.log("Tick array lower on chain?", !!tickLowerInfo);
     console.log("Tick array upper on chain?", !!tickUpperInfo);
@@ -548,7 +552,7 @@ describe("liquidity-manager rebalance test", () => {
     console.log("Tick before swap:", clmmPoolInfo.tickCurrent);
 
     // This swap is to shift the price so that we can test the rebalance logic
-    const swapInputAmount = new anchor.BN(20_000_000); // Adjust as needed to cause enough price movement
+    const swapInputAmount = new anchor.BN(4_000_000); // Adjust as needed to cause enough price movement
 
     const baseIn = true;
     const { minAmountOut, remainingAccounts } =
@@ -593,7 +597,7 @@ describe("liquidity-manager rebalance test", () => {
     }
 
     // Comment the lower code to test the Monitor Bot
-
+    /*
     const poolVault0 = new PublicKey(poolKeys.vault.A);
     const poolVault1 = new PublicKey(poolKeys.vault.B);
 
@@ -615,18 +619,6 @@ describe("liquidity-manager rebalance test", () => {
     const startingBalB = await provider.connection.getTokenAccountBalance(
       startingUserTokenAccountB
     );
-
-    /*
-    console.log(
-      "Starting Wallet token A balance:",
-      startingBalA.value.uiAmount
-    );
-
-    console.log(
-      "Starting Wallet token B balance:",
-      startingBalB.value.uiAmount
-    );
-    */
 
     // We Fetch the current positions amount.
     const pos = await raydium.connection.getAccountInfo(personalPosition);
@@ -961,6 +953,7 @@ describe("liquidity-manager rebalance test", () => {
         authority: provider.wallet.publicKey,
       })
       .rpc();
+    */
   });
 });
 
