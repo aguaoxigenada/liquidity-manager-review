@@ -227,97 +227,15 @@ pub mod liquidity_manager {
     }
 }
 
-/*
-// Maybe it is not needed
-fn calculate_liquidity(
-    lower_tick: i32,
-    upper_tick: i32,
-    amount_a: u64,
-    amount_b: u64,
-    current_tick: i32,
-    token_a_decimals: u8,
-    token_b_decimals: u8,
-) -> Result<u128> {
-    // 1. Convert ticks to sqrt prices
-    let sqrt_price_lower = tick_to_sqrt_price(lower_tick)?;
-    let sqrt_price_upper = tick_to_sqrt_price(upper_tick)?;
-    let sqrt_price_current = tick_to_sqrt_price(current_tick)?;
-
-    // 2. Adjust amounts for decimals
-    let amount_a = adjust_for_decimals(amount_a, token_a_decimals)?;
-    let amount_b = adjust_for_decimals(amount_b, token_b_decimals)?;
-
-    // 3. Calculate liquidity based on position relative to current tick
-    if current_tick < lower_tick {
-        // Position is entirely in token B (right of range)
-        Ok(calculate_liquidity_b(
-            amount_b,
-            sqrt_price_lower,
-            sqrt_price_upper
-        )?)
-    } else if current_tick >= upper_tick {
-        // Position is entirely in token A (left of range)
-        Ok(calculate_liquidity_a(
-            amount_a,
-            sqrt_price_lower,
-            sqrt_price_upper
-        )?)
-    } else {
-        // Position is active (within range)
-        Ok(std::cmp::min(
-            calculate_liquidity_a(amount_a, sqrt_price_current, sqrt_price_upper)?,
-            calculate_liquidity_b(amount_b, sqrt_price_lower, sqrt_price_current)?,
-        ))
-    }
-
-}
-
-
-/// Converts tick to sqrt price (Q64.64 fixed point)
-fn tick_to_sqrt_price(tick: i32) -> Result<u128> {
-    // Raydium uses Q64.64 fixed point sqrt price
-    let sqrt_price = (1.0001f64.powi(tick)).sqrt();
-    Ok((sqrt_price * (1u128 << 64) as f64) as u128)
-}
-
-/// Calculates liquidity when position is all token A
-fn calculate_liquidity_a(amount_a: u128, sqrt_price_low: u128, sqrt_price_high: u128) -> Result<u128> {
-    let sqrt_diff = sqrt_price_high.checked_sub(sqrt_price_low)
-        .ok_or(LiquidityManagerError::InvalidTickRange)?;
-    
-    amount_a
-        .checked_mul(sqrt_price_high)
-        .and_then(|v| v.checked_mul(sqrt_price_low))
-        .and_then(|v| v.checked_div(sqrt_diff))
-        .ok_or(LiquidityManagerError::CalculationOverflow.into())
-}
-
-fn calculate_liquidity_b(amount_b: u128, sqrt_price_low: u128, sqrt_price_high: u128) -> Result<u128> {
-    let sqrt_diff = sqrt_price_high.checked_sub(sqrt_price_low)
-        .ok_or(LiquidityManagerError::InvalidTickRange)?;
-    
-    amount_b
-        .checked_mul(1u128 << 64)
-        .and_then(|v| v.checked_div(sqrt_diff))
-        .ok_or(LiquidityManagerError::CalculationOverflow.into())
-}
-
-/// Adjusts token amount for decimals (convert to native units)
-fn adjust_for_decimals(amount: u64, decimals: u8) -> Result<u128> {
-    Ok(amount as u128 * 10u128.pow(decimals as u32))
-}
- */
-
-
 #[account]
 pub struct LiquidityManager {
     pub authority: Pubkey,     // Admin wallet
     pub executor: Pubkey,      // Executor wallet (bot)
     pub pool: Pubkey,          // Raydium CL pool address
-    pub token_mint_a: Pubkey,  // SOL mint
-    pub token_mint_b: Pubkey,  // USDC mint
-    pub token_vault_a: Pubkey, // Add this
-    pub token_vault_b: Pubkey, // Add this
+    pub token_mint_a: Pubkey, 
+    pub token_mint_b: Pubkey,  
+    pub token_vault_a: Pubkey,
+    pub token_vault_b: Pubkey,
     pub lower_tick: i32,
     pub upper_tick: i32,
     pub current_liquidity: u128,
@@ -361,8 +279,8 @@ pub struct Initialize<'info> {
     // Raydium CL pool
     #[account(mut)]
     pub pool: AccountInfo<'info>,
-    pub token_mint_a: Box<Account<'info, Mint>>,  // SOL
-    pub token_mint_b: Box<Account<'info, Mint>>,  // USDC
+    pub token_mint_a: Box<Account<'info, Mint>>,  
+    pub token_mint_b: Box<Account<'info, Mint>>, 
     #[account(mut)]
     pub authority: Signer<'info>,
     pub system_program: Program<'info, System>,
