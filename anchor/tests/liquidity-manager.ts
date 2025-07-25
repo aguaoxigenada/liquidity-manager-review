@@ -597,7 +597,7 @@ describe("liquidity-manager rebalance test", () => {
     }
 
     // Comment the lower code to test the Monitor Bot
-    /*
+    
     const poolVault0 = new PublicKey(poolKeys.vault.A);
     const poolVault1 = new PublicKey(poolKeys.vault.B);
 
@@ -953,7 +953,6 @@ describe("liquidity-manager rebalance test", () => {
         authority: provider.wallet.publicKey,
       })
       .rpc();
-    */
   });
 });
 
